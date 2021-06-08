@@ -1,0 +1,59 @@
+@import '~@/app.scss';
+
+.win-root {
+  position: absolute;
+  overflow: hidden;
+  background-color: white;
+  border: 1px solid #F4F4F4;
+
+  .win-menu {
+    overflow: hidden;
+    position: relative;
+  }
+
+  .win-body {
+    overflow: auto;
+  }
+
+  .win-menu-root {
+    display: flex;
+    justify-content: flex-end;
+
+    @include themeify {
+      color: themed('text-color');
+      background-color: themed('bg-color');
+    }
+
+    .win-menu-menus {
+      display: flex;
+    }
+
+    .win-menu-item {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 24px;
+      height: 24px;
+      padding: 2px;
+      cursor: pointer;
+      &:hover {
+        background-color: #ccc;
+      }
+
+      .icon {
+        font-size: 12px;
+      }
+    }
+  }
+
+  .win-menu-title {
+    height: 100%;
+    line-height: 24px;
+    font-size: 12px;
+    @include center-x;
+
+    @include themeify {
+      color: themed('text-color');
+    }
+  }
+}

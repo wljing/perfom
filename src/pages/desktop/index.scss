@@ -1,0 +1,18 @@
+@import '~@/app.scss';
+
+.desktop-root {
+  border: none;
+  overflow: hidden;
+}
+
+.desktop-apps-contain {
+  width: 100%;
+  height: calc(100% - 40px);
+  background-color: transparent;
+}
+
+.home_header {
+  @include themeify {
+    color: themed('text-color');
+  }
+}

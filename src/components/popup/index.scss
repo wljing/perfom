@@ -1,0 +1,22 @@
+@import '~@/app.scss';
+
+.popup-root {
+  position: relative;
+}
+
+.popup-content {
+  position: absolute;
+
+  padding: 2px 4px;
+  border-radius: 4px;
+
+  white-space: nowrap;
+  font-size: 12px;
+
+  cursor: default;
+
+  @include themeify {
+    color: themed('text-color');
+    background-color: themed('bg-color');
+  }
+}

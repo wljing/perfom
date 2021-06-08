@@ -1,0 +1,11 @@
+@import '~@/app.scss';
+
+.lock-root {
+  position: absolute;
+  z-index: 999999;
+  width: 100%;
+  height: 100%;
+  // @include themeify {
+  //   background-color: themed('bg-color');
+  // }
+}

@@ -1,0 +1,22 @@
+@import './default.scss';
+@import './dark.scss';
+
+// 主题数组
+$themes: (
+  'default': $default,
+  'dark': $dark,
+);
+
+
+@mixin themeify {
+  @each $theme-name, $theme-map in $themes {
+    $theme-map: $theme-map !global;
+    .theme-#{$theme-name} & {
+      @content;
+    }
+  }
+}
+
+@function themed($key) {
+  @return map-get($theme-map, $key);
+}
