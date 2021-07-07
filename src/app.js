@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import ReactDom from 'react-dom';
 import Router from './route';
 import { setModal, useModal, useEventListener } from '@/hooks';
@@ -36,13 +36,18 @@ setModal({
   }
 });
 
+document.body.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+})
+
 const App = () => {
   // 主题切换
-  const { theme } = useModal('app', ['theme']);
+  const { theme } = useModal('app');
   useMemo(() => {
     document.body.className = `theme-${theme}`;
   }, [theme]);
-
+  useEffect(() => {
+  }, []);
   return (
     <Router />
   )

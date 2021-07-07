@@ -31,11 +31,9 @@ export const setModal = (modal) => {
     // 监听每个modal的store
     Reflect.defineProperty(store, key, {
       get() {
-        // console.log('get', getChannelKey(name, key), _value);
         return _value;
       },
       set(newValue) {
-        // console.log('set', getChannelKey(name, key), newValue);
         _value = newValue;
         const channelKey = getChannelKey(name, key);
         if (watcherMap.has(channelKey)) {
@@ -65,36 +63,35 @@ export const setModal = (modal) => {
 /**
  * @description 使用一个modal
  * @param {string} modalName modal名称
- * @param {array} deps 响应key的数组
- * @returns 
  */
-export const useModal = (modalName, deps = null) => {
+export const useModal = (modalName) => {
   const [_, setState] = useState();
   const self = useMemo(() => ({
     id: null
   }), []);
   let modal = {};
   if (modalMap.has(modalName)) {
-    modal = modalMap.get(modalName);
-    modal = { ...modal.store, ...modal.actions };
+    const { store, actions } = modalMap.get(modalName);
+    self.store = store;
+    modal = { ...store, ...actions };
   }
   if (self.id === null) {
     self.id = index++;
+    self.map = new Map();
     modalList[self.id] = setState;
   }
-  useMemo(() => {
-    if (Array.isArray(deps)) {
-      const id = self.id;
-      deps.forEach(key => {
-        const channelName = getChannelKey(modalName, key);
+  return new Proxy(modal, {
+    get: (target, p) => {
+      if (!self.map.has(p) && Reflect.has(self.store, p)) {
+        const channelName = getChannelKey(modalName, p);
         const set = watcherMap.has(channelName) ? watcherMap.get(channelName) : new Set();
-        set.add(id);
+        set.add(self.id);
         watcherMap.set(channelName, set);
-      });
-    }
-  }, deps);
-
-  return modal;
+        self.map.set(p, true);
+      }
+      return target[p];
+    },
+  });
 };
 
 export const delModal = (modalName) => {

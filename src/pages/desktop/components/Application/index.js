@@ -19,7 +19,7 @@ export default (props) => {
     ...restProps
   } = props;
   const ref = useRef();
-  const { setWindowMap, windowMap } = useModal('desktop', ['windowMap']);
+  const { setWindowMap, windowMap } = useModal('desktop');
   const { appManager } = useModal('app');
   useEffect(() => {
     windowMap[winKey] = {

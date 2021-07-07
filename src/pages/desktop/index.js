@@ -15,7 +15,7 @@ import './index.scss';
 setModal(store);
 
 export default () => {
-  const { desktopImg, windowMap, menus, setWindowMap, createWin, menuWinLinkMap } = useModal('desktop', ['desktopImg', 'windowMap', 'menus', 'windowMap']);
+  const { desktopImg, windowMap, menus, setWindowMap, createWin, menuWinLinkMap } = useModal('desktop');
   const initIndex = 100;
   return (
     <Window
@@ -29,6 +29,7 @@ export default () => {
         height: window.screen.height,
         top: 0,
         left: 0,
+        resize: false,
       }}
       anime={false}
       menuRender={() => <></>}
@@ -42,6 +43,7 @@ export default () => {
         itemClick={(i) => {
           const { id: menuId, appId, winInfo } = menus[i];
           if (Reflect.has(menuWinLinkMap, menuId)) {
+            // 窗口尚未创建
             const winKey = menuWinLinkMap[menuId];
             const modalName = windowMap[winKey].modalName;
             const modal = getModal(modalName);
@@ -60,8 +62,10 @@ export default () => {
               })
               setWindowMap(windowMap);
             }
+            // 切换窗口大小
             toggleSize();
           } else {
+            // 创建窗口
             createWin({
               appId,
               winInfo,

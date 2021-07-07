@@ -12,7 +12,7 @@ import './index.scss';
 setModal(store);
 
 export default () => {
-  const { lock, setLock, lockImg } = useModal('lock', ['lock', 'lockImg']);
+  const { lock, setLock, lockImg } = useModal('lock');
   return (
     <div
       className="lock-root"

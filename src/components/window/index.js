@@ -11,26 +11,32 @@ import { hasModal, setModal, useEventListener, useModal, useSelf } from '@/hooks
 import { unique_key } from '@/utils';
 import { Animator } from '../animate';
 
+// 窗口状态常量
+export const SIZE_STATE_NORMAL = 0;
+export const SIZE_STATE_MAX = 1;
+export const SIZE_STATE_MIN = 2;
+export const SIZE_STATE_DESTORY = -1;
 
+// 菜单组件
 const Menu = memo((props) => {
   const {
-    windowState = 0,
+    sizeState = SIZE_STATE_NORMAL,
     onClick = () => { },
     menuOptions = [
       {
         tip: '最小化',
         content: <Icon name="suoxiao" />,
-        onClick: () => typeof onClick === 'function' && onClick('min', windowState),
+        onClick: () => typeof onClick === 'function' && onClick('min', sizeState),
       },
       {
-        tip: windowState === 0 ? '最大化' : '还原',
-        content: <Icon name={windowState === 1 ? 'zuidahua' : 'zuidahuaxi'} />,
-        onClick: () => typeof onClick === 'function' && onClick('toggle', windowState),
+        tip: sizeState === SIZE_STATE_NORMAL ? '最大化' : '还原',
+        content: <Icon name={sizeState === SIZE_STATE_MAX ? 'zuidahua' : 'zuidahuaxi'} />,
+        onClick: () => typeof onClick === 'function' && onClick('toggle', sizeState),
       },
       {
         tip: '关闭',
         content: <Icon name="guanbi" />,
-        onClick: () => typeof onClick === 'function' && onClick('close', windowState),
+        onClick: () => typeof onClick === 'function' && onClick('close', sizeState),
       },
     ],
     className = '',
@@ -57,21 +63,84 @@ const Menu = memo((props) => {
     </div>
   )
 }, (prev, next) => {
-  if (prev.windowState === next.windowState) {
+  if (prev.sizeState === next.sizeState) {
     return true
   }
   return false;
 });
 
+// 缩放控件
+const ResizeWidget = (props) => {
+  const {
+    style: _style = {},
+    onMove,
+    ...restProps
+  } = props;
+  const [style, setStyle] = useState(_style);
+  const self = useSelf({
+    canMove: false,
+    clientX: 0,
+    clientY: 0,
+    initStyle: null,
+  });
+  if (!self.initStyle) {
+    self.initStyle = style;
+  }
+  useEventListener('mousemove', (e) => {
+    if (self.canMove) {
+      const { clientX, clientY } = e;
+      const diffX = clientX - self.clientX;
+      const diffY = clientY - self.clientY;
+      self.clientX = clientX;
+      self.clientY = clientY;
+      typeof onMove === 'function' && onMove(diffX, diffY);
+      setStyle(prev => {
+        const newStyle = {...prev};
+        if (Reflect.has(newStyle, 'top')) {
+          newStyle.top += diffY;
+        }
+        if (Reflect.has(newStyle, 'left')) {
+          newStyle.left += diffX;
+        }
+        if (Reflect.has(newStyle, 'right')) {
+          newStyle.right += diffX;
+        }
+        if (Reflect.has(newStyle, 'bottom')) {
+          newStyle.bottom += diffY;
+        }
+        return newStyle;
+      })
+    }
+  });
+  useEventListener('mouseup', (e) => {
+    self.canMove = false;
+  })
+  return (
+    <div
+      style={style}
+      onMouseDown={e => {
+        e.preventDefault();
+        const { button, clientX, clientY } = e;
+        if (button === 0) {
+          self.canMove = true;
+          self.clientX = clientX;
+          self.clientY = clientY;
+        }
+      }}
+      {...restProps}
+    />
+  )
+};
 
 // 基础窗口组件
 export const Window = forwardRef((props, ref) => {
+  // 默认窗口参数
   const defaultModal = {
     width: 1200,
     height: 480,
     top: 50,
     left: window.screen.width / 2 - 1200 / 2,
-    sizeState: 0,
+    sizeState: SIZE_STATE_NORMAL,
   };
 
   const {
@@ -95,6 +164,8 @@ export const Window = forwardRef((props, ref) => {
 
     ...restProps
   } = props;
+
+  // 窗口的modalName
   const winModalName = useMemo(() => `W_${winKey}`, []);
 
   const {
@@ -107,6 +178,7 @@ export const Window = forwardRef((props, ref) => {
       width: window.screen.width,
       height: window.screen.height,
     },
+    resize = true,
     ..._winInfo
   } = winInfo;
 
@@ -129,8 +201,8 @@ export const Window = forwardRef((props, ref) => {
       store: Object.assign({}, defaultModal, _winInfo),
       actions: {
         toggleSize: (store) => {
-          if (store.sizeState === 0 || store.sizeState === 1) {
-            store.sizeState = -1;
+          if (store.sizeState === SIZE_STATE_NORMAL || store.sizeState === SIZE_STATE_MAX) {
+            store.sizeState = SIZE_STATE_DESTORY;
           } else {
             store.sizeState = self.beforeMin.sizeState;
           }
@@ -139,8 +211,9 @@ export const Window = forwardRef((props, ref) => {
     });
   }
 
-  const { width, height, top, left, sizeState, setWidth, setHeight, setTop, setLeft, setSizeState } = useModal(winModalName, ['top', 'left', 'width', 'height', 'sizeState']);
+  const { width, height, top, left, sizeState, setWidth, setHeight, setTop, setLeft, setSizeState } = useModal(winModalName);
   if (!self.normal) {
+    // 缓存窗口正常状态
     self.normal = {
       top,
       left,
@@ -151,7 +224,7 @@ export const Window = forwardRef((props, ref) => {
   }
 
   useEventListener('mousemove', (e) => {
-    if (self.canMove && move && self.last.sizeState !== 1) {
+    if (self.canMove && move && self.last.sizeState !== SIZE_STATE_MAX) {
       self.duration = 0;
       const { clientX, clientY } = e;
       setTop(self.last.top + clientY - self.clientY);
@@ -175,31 +248,34 @@ export const Window = forwardRef((props, ref) => {
     };
   }, [top, left]);
 
+  // 首次设置窗口位置
   useEffect(() => {
     setTop(self.init.top);
     setLeft(self.init.left);
   }, []);
+
+  // 窗口sizeState改变设置窗口位置与大小
   useMemo(() => {
-    if (sizeState === 0) {
+    if (sizeState === SIZE_STATE_NORMAL) {
       // 正常
       if (self.last) {
-        if (self.last.sizeState === -1) {
+        if (self.last.sizeState === SIZE_STATE_MIN) {
           setTop(self.beforeMin.top);
           setLeft(self.beforeMin.left);
-        } else if (self.last.sizeState === 1) {
+        } else if (self.last.sizeState === SIZE_STATE_MAX) {
           setTop(self.beforeMax.top);
           setLeft(self.beforeMax.left);
         }
       }
       setWidth(self.normal.width);
       setHeight(self.normal.height);
-    } else if (sizeState === 1) {
+    } else if (sizeState === SIZE_STATE_MAX) {
       // 放大
       setWidth(max.width);
       setHeight(max.height);
       setTop(0);
       setLeft(0);
-      if (self.last.sizeState === 0) {
+      if (self.last.sizeState === SIZE_STATE_NORMAL) {
         self.beforeMax = { ...self.last };
       }
     } else {
@@ -212,12 +288,24 @@ export const Window = forwardRef((props, ref) => {
     }
   }, [sizeState]);
 
+  // 缓存窗口上次的状态
   self.last = {
     top,
     left,
     width,
     height,
     sizeState,
+  };
+
+  // 缩放回调
+  const reszieHandle = (type) => e => {
+    const { clientX, clientY, button } = e;
+    if (button === 0) {
+      self.canMove = false;
+      self.canResize = type;
+      self.clientX = clientX;
+      self.clientY = clientY;
+    }
   };
   return (
     <Animator
@@ -276,18 +364,18 @@ export const Window = forwardRef((props, ref) => {
             </span>
             <Menu
               className={menuClassName}
-              windowState={sizeState}
+              sizeState={sizeState}
               onClick={(type, sizeState) => {
                 self.duration = 200;
                 if (type === 'min') {
-                  setSizeState(-1);
+                  setSizeState(SIZE_STATE_MIN);
                 } else if (type === 'close') {
-                  setSizeState(-1);
+                  setSizeState(SIZE_STATE_DESTORY);
                 } else {
-                  if (sizeState === 0) {
-                    setSizeState(1);
+                  if (sizeState === SIZE_STATE_NORMAL) {
+                    setSizeState(SIZE_STATE_MAX);
                   } else {
-                    setSizeState(0);
+                    setSizeState(SIZE_STATE_NORMAL);
                   }
                 }
               }}
@@ -299,6 +387,57 @@ export const Window = forwardRef((props, ref) => {
       <div className={`win-body`}>
         {children}
       </div>
+      {/* 缩放div */}
+      {
+        resize && (
+          <>
+            <ResizeWidget 
+              className="win-resize-left"
+              style={{
+                top: 0,
+                left: 0,
+              }}
+              onMove={reszieHandle('l')}
+            />
+            <ResizeWidget
+              className="win-resize-top"
+              style={{
+                top: 0,
+                left: 0,
+              }}
+              onMove={reszieHandle('t')}
+            />
+            <ResizeWidget
+              className="win-resize-right"
+              style={{
+                top: 0,
+                right: 0,
+              }}
+              onMove={reszieHandle('r')}
+            />
+            <ResizeWidget
+              className="win-resize-bottom"
+              style={{
+                bottom: 0,
+                right: 0,
+              }}
+              onMove={reszieHandle('b')}
+            />
+            <ResizeWidget
+              className="win-resize-lt"
+            />
+            <ResizeWidget
+              className="win-resize-lb"
+            />
+            <ResizeWidget
+              className="win-resize-rt"
+            />
+            <ResizeWidget
+              className="win-resize-rb"
+            />
+          </>
+        )
+      }
     </Animator>
   )
 });

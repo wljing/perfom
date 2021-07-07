@@ -24,7 +24,7 @@ export default (props) => {
     itemClick,
   } = props;
   const { menus } = useModal('desktop', ['menus']);
-  const { visiable: menuVisable, setVisiable: setMenuVisable, itemSize } = useModal('menu', ['visiable', 'itemSize']);
+  const { visiable: menuVisable, setVisiable: setMenuVisable, itemSize } = useModal('menu');
   const gap = 16; // 菜单项间距
   const padding = 36; // 菜单上下padding
   const maxMensShowLength = 16; // 最多显示的菜单数量
